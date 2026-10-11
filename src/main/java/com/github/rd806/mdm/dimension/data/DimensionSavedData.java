@@ -89,7 +89,7 @@ public class DimensionSavedData extends SavedData {
     /**
      * 某个维度配置的传送出生点。
      * <p>
-     * 这是模组自己的记录，只影响 {@code /mdm dimension tp} 不给坐标时的落点，
+     * 这是模组自己的记录，只影响 {@code /mdm tp} 不给坐标时的落点，
      * <b>不是</b>世界真正的出生点——刻意不去碰 {@code setDefaultSpawnPos}。
      *
      * @return 没配置过、或该维度没有记录时返回 null

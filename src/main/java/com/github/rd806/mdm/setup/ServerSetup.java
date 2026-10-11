@@ -2,6 +2,8 @@ package com.github.rd806.mdm.setup;
 
 import com.github.rd806.mdm.MdmMain;
 import com.github.rd806.mdm.command.DimensionCommand;
+import com.github.rd806.mdm.command.ModifyCommand;
+import com.github.rd806.mdm.command.TeleportCommand;
 import com.github.rd806.mdm.dimension.manager.DynamicDimensionManager;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
@@ -37,10 +39,17 @@ public class ServerSetup {
         }
     }
 
-    /** 注册 /mdm dimension ... 命令组。 */
+    /**
+     * 注册 /mdm 命令树：dimension 命令组和 tp。
+     * <p>
+     * 两个 builder 的根都是 {@code mdm} 字面量，Brigadier 注册时会合并同名根节点，
+     * 所以分两处注册得到的是同一棵 {@code /mdm} 树，不是两条互相覆盖的命令。
+     */
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(DimensionCommand.get());
+        event.getDispatcher().register(TeleportCommand.get());
+        event.getDispatcher().register(ModifyCommand.get());
     }
 
     /**

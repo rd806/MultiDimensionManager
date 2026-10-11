@@ -1,0 +1,23 @@
+{
+  "message.mdm.command.dimension.list.header": "Dimensions (%s):",
+  "message.mdm.command.dimension.list.entry": " - %s [%s]",
+  "message.mdm.command.dimension.kind.static": "static",
+  "message.mdm.command.dimension.kind.dynamic": "dynamic",
+  "message.mdm.command.dimension.unsafe_id": "Unsafe dimension id '%s': the path must not be \".\" or \"..\", nor contain a path separator.",
+  "message.mdm.command.dimension.exists": "Dimension %s already exists.",
+  "message.mdm.command.dimension.create.unknown_template": "Unknown template '%s'. Available: %s",
+  "message.mdm.command.dimension.create.build_failed": "Could not build a LevelStem from template '%s'. See the server log.",
+  "message.mdm.command.dimension.create.success": "Created dimension %s from template '%s'.",
+  "message.mdm.command.dimension.import.success": "Imported %s chunk file(s) from '%s' (%s) into %s.",
+  "message.mdm.command.dimension.delete.not_loaded": "Dimension %s is not loaded.",
+  "message.mdm.command.dimension.delete.static": "Dimension %s is defined by a datapack and cannot be deleted at runtime.",
+  "message.mdm.command.dimension.delete.failed": "Failed to delete dimension %s.",
+  "message.mdm.command.dimension.delete.success": "Deleted dimension %s.",
+  "message.mdm.command.modify.spawn.not_managed": "%s is not managed by this mod, so its teleport spawn cannot be configured.",
+  "message.mdm.command.modify.spawn.unset": "%s has no teleport spawn configured; /mdm tp without coordinates falls back to the surface.",
+  "message.mdm.command.modify.spawn.get": "Teleport spawn of %s: %s",
+  "message.mdm.command.modify.spawn.set": "Set the teleport spawn of %s to %s.",
+  "message.mdm.command.modify.spawn.clear": "Cleared the teleport spawn of %s.",
+  "message.mdm.command.tp.failed": "Failed to teleport to %s.",
+  "message.mdm.command.tp.success": "Teleported %s player(s) to %s."
+}

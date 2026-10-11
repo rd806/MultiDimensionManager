@@ -1,0 +1,23 @@
+{
+  "message.mdm.command.dimension.list.header": "维度（%s）：",
+  "message.mdm.command.dimension.list.entry": " - %s [%s]",
+  "message.mdm.command.dimension.kind.static": "静态",
+  "message.mdm.command.dimension.kind.dynamic": "动态",
+  "message.mdm.command.dimension.unsafe_id": "非法的维度 id '%s'：path 不能是 \".\" 或 \"..\"，也不能含路径分隔符。",
+  "message.mdm.command.dimension.exists": "维度 %s 已存在。",
+  "message.mdm.command.dimension.create.unknown_template": "未知模板 '%s'。可用：%s",
+  "message.mdm.command.dimension.create.build_failed": "无法用模板 '%s' 构建 LevelStem，详见服务器日志。",
+  "message.mdm.command.dimension.create.success": "已创建维度 %s（模板 '%s'）。",
+  "message.mdm.command.dimension.import.success": "已导入 %s 个区块文件：来自 '%s'（%s），目标 %s。",
+  "message.mdm.command.dimension.delete.not_loaded": "维度 %s 未加载。",
+  "message.mdm.command.dimension.delete.static": "维度 %s 由数据包定义，无法在运行时删除。",
+  "message.mdm.command.dimension.delete.failed": "删除维度 %s 失败。",
+  "message.mdm.command.dimension.delete.success": "已删除维度 %s。",
+  "message.mdm.command.modify.spawn.not_managed": "%s 不由本模组管理，无法配置传送出生点。",
+  "message.mdm.command.modify.spawn.unset": "%s 还没有配置传送出生点；/mdm tp 不给坐标时会退到地表计算。",
+  "message.mdm.command.modify.spawn.get": "%s 的传送出生点：%s",
+  "message.mdm.command.modify.spawn.set": "已把 %s 的传送出生点设为 %s。",
+  "message.mdm.command.modify.spawn.clear": "已清除 %s 的传送出生点。",
+  "message.mdm.command.tp.failed": "传送到 %s 失败。",
+  "message.mdm.command.tp.success": "已把 %s 名玩家传送到 %s。"
+}

@@ -1,5 +1,6 @@
 package com.github.rd806.mdm.dimension.data;
 
+import com.github.rd806.mdm.config.Config;
 import com.github.rd806.mdm.dimension.MdmDimensions;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -34,7 +35,7 @@ import java.util.stream.Stream;
 public final class DimensionImportSource {
 
     /** 约定目录名（位于游戏根目录下）。 */
-    public static final String DIRECTORY = "mdm_imports";
+    public static final String DIRECTORY = Config.IMPORT_FOLDER.get();
 
     private static final String LEVEL_DAT = "level.dat";
     private static final String TAG_DATA = "Data";
