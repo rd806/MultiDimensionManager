@@ -457,6 +457,31 @@ public final class DynamicDimensionManager {
         return DimensionSavedData.get(server).setSpawn(key.location().toString(), pos);
     }
 
+    // ---------------------------------------------------------------- 别名
+
+    /**
+     * 某个维度的别名——界面上拿来展示的名字。
+     * <p>
+     * 和传送出生点同一套语义：只有本模组记录的动态维度才可能有别名，静态维度（数据包 JSON 定义的、
+     * 以及 vanilla 那三个）在存档数据里没有条目，永远返回 null。
+     *
+     * @return 没设置过、或该维度不由本模组管理时返回 null
+     */
+    @Nullable
+    public static String aliasOf(MinecraftServer server, ResourceKey<Level> key) {
+        return DimensionSavedData.get(server).aliasOf(key.location().toString());
+    }
+
+    /**
+     * 设置或清除某个维度的别名。
+     *
+     * @param alias 传 null 表示清除
+     * @return false 表示该维度不由本模组管理，无法配置
+     */
+    public static boolean setAlias(MinecraftServer server, ResourceKey<Level> key, @Nullable String alias) {
+        return DimensionSavedData.get(server).setAlias(key.location().toString(), alias);
+    }
+
     @Nullable
     private static Tag encode(MinecraftServer server, LevelStem stem) {
         RegistryOps<Tag> ops = RegistryOps.create(NbtOps.INSTANCE, server.registryAccess());

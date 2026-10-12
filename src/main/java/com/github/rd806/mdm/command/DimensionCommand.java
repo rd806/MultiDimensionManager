@@ -32,16 +32,8 @@ import java.util.concurrent.CompletableFuture;
  *   /mdm dimension list
  *   /mdm dimension create &lt;id&gt; &lt;模板&gt;
  *   /mdm dimension delete &lt;id&gt;
- *   /mdm dimension imports
  *   /mdm dimension import &lt;id&gt; &lt;源名&gt; [源维度] [模板]
- *   /mdm dimension spawn &lt;id&gt;               显示该维度的传送出生点
- *   /mdm dimension spawn &lt;id&gt; set [坐标]     设置（省略坐标时用执行者所在位置）
- *   /mdm dimension spawn &lt;id&gt; clear         清除
  * </pre>
- * <p>
- * 出生点只影响 {@code /mdm tp} 不给坐标时的落点，不是世界真正的出生点。
- * <p>
- * 传送命令本身在 {@link TeleportCommand}，它和这里同根（都是 {@code /mdm}）。
  */
 public final class DimensionCommand {
 
@@ -128,6 +120,7 @@ public final class DimensionCommand {
         MinecraftServer server = source.getServer();
 
         List<ResourceKey<Level>> keys = DynamicDimensionManager.list(server).stream()
+                .filter(MdmDimensions::isVisible)
                 .sorted(Comparator.comparing(key -> key.location().toString()))
                 .toList();
 
@@ -157,7 +150,7 @@ public final class DimensionCommand {
             return 0;
         }
 
-        if (!MdmDimensions.isSafePath(id)) {
+        if (MdmDimensions.isUnSafePath(id)) {
             source.sendFailure(Component.translatable("message.mdm.command.dimension.unsafe_id", id));
             return 0;
         }
@@ -198,7 +191,7 @@ public final class DimensionCommand {
                 : Level.OVERWORLD.location();
         String template = hasTemplate ? StringArgumentType.getString(context, ARG_TEMPLATE) : null;
 
-        if (!MdmDimensions.isSafePath(id)) {
+        if (MdmDimensions.isUnSafePath(id)) {
             source.sendFailure(Component.translatable("message.mdm.command.dimension.unsafe_id", id));
             return 0;
         }

@@ -1,6 +1,7 @@
 package com.github.rd806.mdm;
 
 import com.github.rd806.mdm.config.Config;
+import com.github.rd806.mdm.gui.MdmGuiNetwork;
 import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
@@ -32,5 +33,7 @@ public class MdmMain {
     public MdmMain(FMLJavaModLoadingContext context) {
         // Register our mod's ForgeConfigSpec so that Forge can create and load the config file for us
         context.registerConfig(ModConfig.Type.COMMON, Config.init());
+        // 维度选择界面的包通道。构造函数在双端都会跑，正好满足"两端各注册一次"的要求
+        MdmGuiNetwork.register();
     }
 }

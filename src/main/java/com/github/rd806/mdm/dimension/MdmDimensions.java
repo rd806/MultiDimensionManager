@@ -1,6 +1,7 @@
 package com.github.rd806.mdm.dimension;
 
 import com.github.rd806.mdm.MdmMain;
+import com.github.rd806.mdm.config.Config;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -47,15 +48,31 @@ public final class MdmDimensions {
     }
 
     /**
+     * 该维度是否应该展示给玩家——GUI 的维度列表、{@code /mdm dimension list}、{@code /mdm tp} 的补全
+     * 都走这一条判断。
+     * <p>
+     * 由 {@code Config.SHOW_OTHER_DIMENSIONS} 控制：开启时全部可见；关闭时只留主世界和本模组管理的
+     * 动态维度。主世界是故意留下的——它是回正常世界的出口，藏起来等于把玩家关在动态维度里。
+     * <p>
+     * 这条只管「显不显示」，不管「能不能用」：关掉之后照样能手打 id 传送过去。
+     */
+    public static boolean isVisible(ResourceKey<Level> key) {
+        if (Config.showOtherDimensions()) {
+            return true;
+        }
+        return key.equals(Level.OVERWORLD) || MdmMain.LEVELS.contains(key);
+    }
+
+    /**
      * 判断维度 id 的 path 是否安全。
      * <p>
      * {@code DimensionType.getStorageFolder} 会把 path 直接当目录名拼进去，而 ResourceLocation
      * 允许 path 为 "." 或 ".."。那样 {@code mdm:..} 会被折叠成 {@code dimensions/mdm} ——
      * 删除这个维度就会连带删掉同一命名空间下别的维度。这类 id 一律拒绝。
      */
-    public static boolean isSafePath(ResourceLocation id) {
+    public static boolean isUnSafePath(ResourceLocation id) {
         String path = id.getPath();
-        return !path.equals(".") && !path.equals("..")
-                && !path.contains("/") && !path.contains("\\");
+        return path.equals(".") || path.equals("..")
+                || path.contains("/") || path.contains("\\");
     }
 }

@@ -1,16 +1,20 @@
 package com.github.rd806.mdm.command;
 
+import com.github.rd806.mdm.dimension.MdmDimensions;
 import com.github.rd806.mdm.dimension.manager.DynamicDimensionManager;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.DimensionArgument;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -39,6 +43,24 @@ public final class TeleportCommand {
     private static final String ARG_POS = "pos";
 
     /**
+     * 维度参数的补全。
+     * <p>
+     * {@code DimensionArgument} 自带"提示全部已加载维度"，这里换上自己的，好让
+     * {@code Config.SHOW_OTHER_DIMENSIONS} 对命令行也生效。Brigadier 里自定义 provider 会顶掉
+     * 参数类型自带的补全，但**不影响解析**：关掉之后照样能手打 {@code minecraft:the_nether} 传送过去，
+     * 只是不再提示。
+     */
+    private static final SuggestionProvider<CommandSourceStack> SUGGEST_VISIBLE_DIMENSIONS =
+            (context, builder) -> {
+                MinecraftServer server = context.getSource().getServer();
+                return SharedSuggestionProvider.suggest(
+                        DynamicDimensionManager.list(server).stream()
+                                .filter(MdmDimensions::isVisible)
+                                .map(key -> key.location().toString())
+                                .sorted(), builder);
+            };
+
+    /**
      * 构建 {@code /mdm tp} 分支。
      * <p>
      * 返回的 builder 和 {@link DimensionCommand#get()} 同根，注册方两个都要
@@ -51,6 +73,7 @@ public final class TeleportCommand {
                 .then(Commands.literal(TELEPORT)
                         .then(Commands.argument(ARG_TARGETS, EntityArgument.players())
                                 .then(Commands.argument(ARG_DIMENSION, DimensionArgument.dimension())
+                                        .suggests(SUGGEST_VISIBLE_DIMENSIONS)
                                         .executes(context -> teleport(context, false))
                                         .then(Commands.argument(ARG_POS, BlockPosArgument.blockPos())
                                                 .executes(context -> teleport(context, true))))));

@@ -5,6 +5,7 @@ import com.github.rd806.mdm.command.DimensionCommand;
 import com.github.rd806.mdm.command.ModifyCommand;
 import com.github.rd806.mdm.command.TeleportCommand;
 import com.github.rd806.mdm.dimension.manager.DynamicDimensionManager;
+import com.github.rd806.mdm.command.GuiCommand;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
@@ -40,16 +41,17 @@ public class ServerSetup {
     }
 
     /**
-     * 注册 /mdm 命令树：dimension 命令组和 tp。
+     * 注册 /mdm 命令树：dimension 命令组、tp、modify 和 gui。
      * <p>
-     * 两个 builder 的根都是 {@code mdm} 字面量，Brigadier 注册时会合并同名根节点，
-     * 所以分两处注册得到的是同一棵 {@code /mdm} 树，不是两条互相覆盖的命令。
+     * 每个 builder 的根都是 {@code mdm} 字面量，Brigadier 注册时会合并同名根节点，
+     * 所以分多处注册得到的是同一棵 {@code /mdm} 树，不是互相覆盖的命令。
      */
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(DimensionCommand.get());
         event.getDispatcher().register(TeleportCommand.get());
         event.getDispatcher().register(ModifyCommand.get());
+        event.getDispatcher().register(GuiCommand.get());
     }
 
     /**

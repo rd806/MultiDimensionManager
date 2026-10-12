@@ -1,4 +1,7 @@
 {
+  "gui.mdm.dimension_select.title": "选择维度",
+  "gui.mdm.dimension_select.current": "（当前）",
+
   "message.mdm.command.dimension.list.header": "维度（%s）：",
   "message.mdm.command.dimension.list.entry": " - %s [%s]",
   "message.mdm.command.dimension.kind.static": "静态",
@@ -18,6 +21,13 @@
   "message.mdm.command.modify.spawn.get": "%s 的传送出生点：%s",
   "message.mdm.command.modify.spawn.set": "已把 %s 的传送出生点设为 %s。",
   "message.mdm.command.modify.spawn.clear": "已清除 %s 的传送出生点。",
+  "message.mdm.command.modify.alias.not_managed": "%s 不由本模组管理，无法设置别名。",
+  "message.mdm.command.modify.alias.get": "%s 的别名：%s",
+  "message.mdm.command.modify.alias.unset": "%s 还没有设置别名。",
+  "message.mdm.command.modify.alias.set": "已把 %s 的别名设为 '%s'。",
+  "message.mdm.command.modify.alias.clear": "已清除 %s 的别名。",
+  "message.mdm.command.modify.alias.too_long": "别名过长（最多 %s 个字符）。",
   "message.mdm.command.tp.failed": "传送到 %s 失败。",
-  "message.mdm.command.tp.success": "已把 %s 名玩家传送到 %s。"
+  "message.mdm.command.tp.success": "已把 %s 名玩家传送到 %s。",
+  "message.mdm.command.gui.no_permission": "你没有权限使用维度选择界面。"
 }

@@ -1,4 +1,7 @@
 {
+  "gui.mdm.dimension_select.title": "Select a Dimension",
+  "gui.mdm.dimension_select.current": " (current)",
+
   "message.mdm.command.dimension.list.header": "Dimensions (%s):",
   "message.mdm.command.dimension.list.entry": " - %s [%s]",
   "message.mdm.command.dimension.kind.static": "static",
@@ -18,6 +21,13 @@
   "message.mdm.command.modify.spawn.get": "Teleport spawn of %s: %s",
   "message.mdm.command.modify.spawn.set": "Set the teleport spawn of %s to %s.",
   "message.mdm.command.modify.spawn.clear": "Cleared the teleport spawn of %s.",
+  "message.mdm.command.modify.alias.not_managed": "%s is not managed by this mod, so it cannot be given an alias.",
+  "message.mdm.command.modify.alias.get": "Alias of %s: %s",
+  "message.mdm.command.modify.alias.unset": "%s has no alias set.",
+  "message.mdm.command.modify.alias.set": "Set the alias of %s to '%s'.",
+  "message.mdm.command.modify.alias.clear": "Cleared the alias of %s.",
+  "message.mdm.command.modify.alias.too_long": "Alias is too long (at most %s characters).",
   "message.mdm.command.tp.failed": "Failed to teleport to %s.",
-  "message.mdm.command.tp.success": "Teleported %s player(s) to %s."
+  "message.mdm.command.tp.success": "Teleported %s player(s) to %s.",
+  "message.mdm.command.gui.no_permission": "You do not have permission to use the dimension selector."
 }

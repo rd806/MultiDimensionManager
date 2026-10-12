@@ -34,7 +34,10 @@ public class DimensionSavedData extends SavedData {
     public static final String FILE_ID = "mdm_dimensions";
 
     private static final String KEY_DIMENSIONS = "dimensions";
+    // 维度 ID
     private static final String KEY_ID = "id";
+    // 别名
+    private static final String ALIAS = "alias";
     private static final String KEY_STEM = "stem";
     private static final String KEY_SPAWN = "spawn";
 
@@ -71,15 +74,21 @@ public class DimensionSavedData extends SavedData {
         return List.copyOf(entries);
     }
 
-    /** 记录一个维度；同 id 已存在时覆盖，避免重复条目。已设置的传送出生点会被带过去。 */
+    /** 记录一个维度；同 id 已存在时覆盖，避免重复条目。已设置的传送出生点和别名会被带过去。 */
     public void put(CompoundTag entry) {
         String id = entry.getString(KEY_ID);
         for (CompoundTag existing : entries) {
-            if (id.equals(existing.getString(KEY_ID)) && existing.contains(KEY_SPAWN, Tag.TAG_COMPOUND)) {
-                // 不这样带过去的话，重新 record 一次就会把手工设置的出生点悄悄抹掉
-                entry.put(KEY_SPAWN, existing.getCompound(KEY_SPAWN).copy());
-                break;
+            if (!id.equals(existing.getString(KEY_ID))) {
+                continue;
             }
+            // 不这样带过去的话，重新 record 一次就会把手工设置的出生点和别名悄悄抹掉
+            if (existing.contains(KEY_SPAWN, Tag.TAG_COMPOUND)) {
+                entry.put(KEY_SPAWN, existing.getCompound(KEY_SPAWN).copy());
+            }
+            if (existing.contains(ALIAS, Tag.TAG_STRING)) {
+                entry.putString(ALIAS, existing.getString(ALIAS));
+            }
+            break;
         }
         entries.removeIf(existing -> id.equals(existing.getString(KEY_ID)));
         entries.add(entry);
@@ -128,6 +137,51 @@ public class DimensionSavedData extends SavedData {
                 spawn.putInt(SPAWN_Y, pos.getY());
                 spawn.putInt(SPAWN_Z, pos.getZ());
                 entry.put(KEY_SPAWN, spawn);
+            }
+            setDirty();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 某个维度的别名——展示用的名字，和传送出生点一样只是模组自己的记录。
+     * <p>
+     * 条目里没有 "alias" 键、或存的是空白串，都算没设置。旧存档缺这个键，所以天然兼容。
+     *
+     * @return 没设置过、或该维度没有记录时返回 null
+     */
+    @Nullable
+    public String aliasOf(String id) {
+        for (CompoundTag entry : entries) {
+            if (!id.equals(entry.getString(KEY_ID))) {
+                continue;
+            }
+            if (!entry.contains(ALIAS, Tag.TAG_STRING)) {
+                return null;
+            }
+            String alias = entry.getString(ALIAS);
+            return alias.isBlank() ? null : alias;
+        }
+        return null;
+    }
+
+    /**
+     * 设置或清除某个维度的别名。
+     *
+     * @param alias 传 null 表示清除；空白串同样按清除处理，别往盘里留没意义的空值
+     * @return false 表示该维度不由本模组管理（没有记录），无从设置
+     */
+    public boolean setAlias(String id, @Nullable String alias) {
+        String normalized = alias == null || alias.isBlank() ? null : alias;
+        for (CompoundTag entry : entries) {
+            if (!id.equals(entry.getString(KEY_ID))) {
+                continue;
+            }
+            if (normalized == null) {
+                entry.remove(ALIAS);
+            } else {
+                entry.putString(ALIAS, normalized);
             }
             setDirty();
             return true;
