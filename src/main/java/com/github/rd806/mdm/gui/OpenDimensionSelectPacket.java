@@ -21,8 +21,8 @@ public record OpenDimensionSelectPacket(List<Entry> entries) {
      * 一个维度条目。
      *
      * @param isStatic 是否由数据包 JSON 定义（否则是本模组运行时创建/导入的动态维度）
-     * @param alias    管理员设的别名，界面上当主标题显示；没设过为 null（静态维度必然为 null，
-     *                 它们没有模组条目）
+     * @param alias    管理员设的别名，界面上当主标题显示；没设过为 null。任何已加载维度都能设，
+     *                 所以静态维度也可能有
      */
     public record Entry(ResourceLocation id, boolean isStatic, @Nullable String alias) {
     }

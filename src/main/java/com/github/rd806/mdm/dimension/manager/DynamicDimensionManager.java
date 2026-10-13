@@ -13,6 +13,7 @@ import net.minecraft.resources.RegistryOps;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -144,9 +145,9 @@ public final class DynamicDimensionManager {
                                                @Nullable String fallbackTemplate) {
         CompoundTag stem = source.declaredStem(sourceDim);
         if (stem == null) {
-            throw new DimensionImportSource.ImportException("源存档 '" + source.name() + "' 的 level.dat 里没有声明维度 "
-                    + sourceDim + "。它声明的维度有：" + String.join(", ", source.declaredDimensions())
-                    + "。换一个源维度，或确认这个存档的 level.dat 没有被裁剪过。");
+            throw new DimensionImportSource.ImportException(Component.translatable(
+                    "message.mdm.import.undeclared_dimension",
+                    source.name(), sourceDim, String.join(", ", source.declaredDimensions())));
         }
 
         Holder<DimensionType> type = DimensionImportSource.resolveType(server, stem);
@@ -156,8 +157,9 @@ public final class DynamicDimensionManager {
         if ((type == null || generator == null) && fallbackTemplate != null) {
             LevelStem fallback = DimensionTemplates.build(server, fallbackTemplate);
             if (fallback == null) {
-                throw new DimensionImportSource.ImportException("模板 '" + fallbackTemplate
-                        + "' 无法解析，可用模板：" + String.join(", ", DimensionTemplates.names()));
+                throw new DimensionImportSource.ImportException(Component.translatable(
+                        "message.mdm.import.unknown_template",
+                        fallbackTemplate, String.join(", ", DimensionTemplates.names())));
             }
             if (type == null) {
                 type = fallback.type();
@@ -167,11 +169,12 @@ public final class DynamicDimensionManager {
             }
         }
         if (type == null) {
-            throw new DimensionImportSource.ImportException("无法确定源存档中 " + sourceDim
-                    + " 的维度类型。请显式指定一个模板作为兜底。");
+            throw new DimensionImportSource.ImportException(
+                    Component.translatable("message.mdm.import.unknown_type", sourceDim));
         }
         if (generator == null) {
-            throw new DimensionImportSource.ImportException("无法确定源存档中 " + sourceDim + " 的生成器。");
+            throw new DimensionImportSource.ImportException(
+                    Component.translatable("message.mdm.import.unknown_generator", sourceDim));
         }
 
         DimensionType target = type.value();
@@ -179,14 +182,13 @@ public final class DynamicDimensionManager {
         // 安全阀：高度不匹配时 ChunkSerializer.read 会静默丢弃越界的区块段，必须在这里拦下
         int[] extent = DimensionImportSource.declaredExtent(server, stem);
         if (extent == null) {
-            throw new DimensionImportSource.ImportException("无法确定源存档中 " + sourceDim
-                    + " 的垂直范围，拒绝导入。高度不匹配会让区块段被静默丢弃，"
-                    + "宁可拒绝也不导入一个缺了地层的世界。");
+            throw new DimensionImportSource.ImportException(
+                    Component.translatable("message.mdm.import.unknown_extent", sourceDim));
         }
         if (extent[0] != target.minY() || extent[1] != target.height()) {
-            throw new DimensionImportSource.ImportException("高度不匹配，拒绝导入。源：min_y=" + extent[0]
-                    + " height=" + extent[1] + "；目标维度类型：min_y=" + target.minY()
-                    + " height=" + target.height() + "。请改用 min_y/height 一致的模板。");
+            throw new DimensionImportSource.ImportException(Component.translatable(
+                    "message.mdm.import.extent_mismatch",
+                    extent[0], extent[1], target.minY(), target.height()));
         }
 
         // 先拷贝文件，再创建维度
@@ -195,14 +197,19 @@ public final class DynamicDimensionManager {
 
         long chunkFiles = copyTree(sourceFolder.resolve("region"), targetFolder.resolve("region"), true);
         if (chunkFiles == 0L) {
-            throw new DimensionImportSource.ImportException("源存档的 " + sourceDim + " 没有区块数据（"
-                    + sourceFolder.resolve("region") + " 里没有 .mca 文件）。");
+            throw new DimensionImportSource.ImportException(Component.translatable(
+                    "message.mdm.import.no_chunks", sourceDim, sourceFolder.resolve("region")));
         }
         // entities/ 与 poi/ 缺失是正常的；data/ 刻意不拷，那是维度级 SavedData，可能与目标世界冲突
         copyTree(sourceFolder.resolve("entities"), targetFolder.resolve("entities"), false);
         copyTree(sourceFolder.resolve("poi"), targetFolder.resolve("poi"), false);
 
         createAndPersist(server, key, new LevelStem(type, generator));
+
+        // 记下这次导入的配方：之后 /mdm modify backup 查得到，/mdm dimension reset 能照它重来。
+        // 写在 meta 段（不在这条维度记录里），所以后续 re-record 不会把它抹掉
+        DimensionSavedData.get(server).setBackup(key.location().toString(),
+                new DimensionSavedData.Backup(source.name(), sourceDim, fallbackTemplate));
 
         MdmMain.LOGGER.info("Imported {} chunk file(s) from '{}' into {}", chunkFiles, source.name(), key.location());
         return new ImportResult(key.location(), source.name(), chunkFiles);
@@ -216,7 +223,8 @@ public final class DynamicDimensionManager {
     private static long copyTree(Path from, Path to, boolean required) {
         if (!Files.isDirectory(from)) {
             if (required) {
-                throw new DimensionImportSource.ImportException("源存档里没有 " + from.getFileName() + "/ 目录。");
+                throw new DimensionImportSource.ImportException(
+                        Component.translatable("message.mdm.import.missing_folder", from.getFileName()));
             }
             return 0L;
         }
@@ -234,12 +242,12 @@ public final class DynamicDimensionManager {
             }
         } catch (IOException e) {
             throw new DimensionImportSource.ImportException(
-                    "拷贝 " + from + " 到 " + to + " 失败：" + e.getMessage(), e);
+                    Component.translatable("message.mdm.import.copy_failed", from, to, e.getMessage()), e);
         }
         return copied;
     }
 
-    // ---------------------------------------------------------------- 删除
+    // ---------------------------------------------------------------- 删除 / 重置
 
     /**
      * 卸载并移除一个运行时创建的维度，连同它的存档目录。
@@ -248,44 +256,136 @@ public final class DynamicDimensionManager {
      * 调用方应当先用 {@link MdmDimensions#isStatic} 拦下来。
      */
     public static boolean delete(MinecraftServer server, ResourceKey<Level> key) {
-        ServerLevel level = server.getLevel(key);
-        if (level == null) {
+        if (server.getLevel(key) == null) {
             return false;
         }
+        unloadAndWipe(server, key);
 
-        // 1. 先把人送走，否则卸载后玩家会挂在死掉的 level 上
-        evictPlayers(server, level);
-
-        // 2. 先把服务器映射摘掉。这一步是「删除生效」的关键，必须排在任何可能阻塞的清理之前：
-        //    IOWorker 的写入队列一旦被关闭，之后任何 synchronize().join() 都永远等不到结果
-        //    （ProcessorMailbox 关闭后会静默丢弃入队任务），会把服务器主线程卡死在这里，
-        //    连带 stopServer 也走不完。先摘映射就能保证即使关闭出问题，删除也已经生效。
-        server.forgeGetWorldMap().remove(key);
-        server.markWorldsDirty();
-        removeBorderListener(server, key);
-
-        // 3. 只调一次 close()。Level.close() 内部就是 chunkSource.close()，
-        //    再单独调一次 getChunkSource().close() 会走到第二次 save(true) → flushWorker()
-        //    → synchronize().join()，于是正好撞上上面那条死锁。
-        //    这里不需要另外调 save()：数据马上要整目录删掉，close() 自己会 flush。
-        //    事件与关闭的先后顺序对齐 vanilla 的 stopServer。
-        MinecraftForge.EVENT_BUS.post(new LevelEvent.Unload(level));
-        try {
-            level.close();
-        } catch (Exception e) {
-            // 关不干净也继续：维度已经从 levels 里摘掉，删除本身已经生效
-            MdmMain.LOGGER.error("Failed to close dimension {} cleanly", key.location(), e);
-        }
-
-        // 4. 抹掉存档目录。必须在 close 之后——Windows 上文件句柄没释放会删不掉。
-        deleteStorageFolder(server, key);
-
-        // 5. 从持久化记录里删除，避免重启复活
+        // 从持久化记录里删除，避免重启复活。meta 段（别名/出生点/备份）也一并清掉
         DimensionSavedData.get(server).remove(key.location().toString());
         refreshManagedLevels(server);
 
         MdmMain.LOGGER.info("Dynamic dimension deleted: {}", key.location());
         return true;
+    }
+
+    /**
+     * 把人送走、把 level 从服务器摘下来关闭、再抹掉它的存档目录。
+     * <p>
+     * 抹掉目录之后这个维度的地形就没了（region 文件不可恢复），调用方决定后续怎么办：删除到此为止，
+     * 重置则接着从备份重建。level 没加载时跳过卸载，直接抹目录。
+     * <p>
+     * <b>步骤顺序是有讲究的，别调换</b>：
+     * <ol>
+     *   <li>先把人送走，否则卸载后玩家会挂在死掉的 level 上。</li>
+     *   <li>再摘服务器映射。这一步是「卸载生效」的关键，必须排在任何可能阻塞的清理之前：
+     *       IOWorker 的写入队列一旦被关闭，之后任何 synchronize().join() 都永远等不到结果
+     *       （ProcessorMailbox 关闭后会静默丢弃入队任务），会把服务器主线程卡死在这里，
+     *       连带 stopServer 也走不完。先摘映射就能保证即使关闭出问题，卸载也已经生效。</li>
+     *   <li>只调一次 close()。Level.close() 内部就是 chunkSource.close()，再单独调一次
+     *       getChunkSource().close() 会走到第二次 save(true) → flushWorker() → synchronize().join()，
+     *       于是正好撞上上面那条死锁。这里不需要另外调 save()：数据马上要整目录删掉，
+     *       close() 自己会 flush。事件与关闭的先后顺序对齐 vanilla 的 stopServer。</li>
+     *   <li>最后抹目录，必须在 close 之后——Windows 上文件句柄没释放会删不掉。</li>
+     * </ol>
+     */
+    private static void unloadAndWipe(MinecraftServer server, ResourceKey<Level> key) {
+        ServerLevel level = server.getLevel(key);
+        if (level == null) {
+            deleteStorageFolder(server, key);
+            return;
+        }
+
+        evictPlayers(server, level);
+
+        server.forgeGetWorldMap().remove(key);
+        server.markWorldsDirty();
+        removeBorderListener(server, key);
+
+        MinecraftForge.EVENT_BUS.post(new LevelEvent.Unload(level));
+        try {
+            level.close();
+        } catch (Exception e) {
+            // 关不干净也继续：维度已经从 levels 里摘掉，卸载本身已经生效
+            MdmMain.LOGGER.error("Failed to close dimension {} cleanly", key.location(), e);
+        }
+
+        deleteStorageFolder(server, key);
+    }
+
+    // ---------------------------------------------------------------- 备份 / 重置
+
+    /**
+     * 某个维度的导入配方——记着它当初是从哪份存档的哪个维度导进来的。
+     *
+     * @return 不是导入来的（模板创建）返回 null
+     */
+    @Nullable
+    public static DimensionSavedData.Backup backupOf(MinecraftServer server, ResourceKey<Level> key) {
+        return DimensionSavedData.get(server).backupOf(key.location().toString());
+    }
+
+    /**
+     * 改写或清除某个维度的导入配方。
+     * <p>
+     * 改配方只动这份记录，<b>不会</b>去动已经导入的地形——要按新配方重来，得再敲一次重置。
+     *
+     * @param backup 传 null 表示清除，此后该维度被当作"模板创建"，不能再重置
+     * @return false 表示该维度没加载，无处可设
+     */
+    public static boolean setBackup(MinecraftServer server, ResourceKey<Level> key,
+                                    @Nullable DimensionSavedData.Backup backup) {
+        if (server.getLevel(key) == null) {
+            return false;
+        }
+        DimensionSavedData.get(server).setBackup(key.location().toString(), backup);
+        return true;
+    }
+
+    /**
+     * 按备份原地重置一个维度：卸载 → 抹掉地形 → 照原配方重导一次。
+     * <p>
+     * 维度 id、别名、传送出生点、备份记录本身都保留——它们在 meta 段里，重导只写 {@code dim} 段。
+     * 连带把 LevelStem 刷成与备份一致（重导本来就会重新解析类型/生成器，这是对的）。
+     *
+     * @throws DimensionImportSource.ImportException 没有备份记录、备份目录不存在，或重导过程中任何
+     *                                               可预期的失败——消息已 i18n，交给命令层投递
+     */
+    public static ImportResult resetFromBackup(MinecraftServer server, ResourceKey<Level> key) {
+        DimensionSavedData.Backup backup = backupOf(server, key);
+        if (backup == null) {
+            throw new DimensionImportSource.ImportException(
+                    Component.translatable("message.mdm.import.no_backup", key.location()));
+        }
+        DimensionImportSource source = DimensionImportSource.locate(backup.source());
+
+        // 预检源里到底有没有区块文件。重置是「先破坏再重建」，抹掉之后拷贝才失败的话，会留下一个
+        // 被抹空的维度——所以宁可在这里就先失败，一个字节都别动
+        Path sourceRegion = source.storageFolder(backup.sourceDim()).resolve("region");
+        if (!Files.isDirectory(sourceRegion)) {
+            throw new DimensionImportSource.ImportException(
+                    Component.translatable("message.mdm.import.missing_folder", sourceRegion.getFileName()));
+        }
+        try (Stream<Path> walk = Files.list(sourceRegion)) {
+            if (walk.noneMatch(path -> path.getFileName().toString().endsWith(".mca"))) {
+                throw new DimensionImportSource.ImportException(Component.translatable(
+                        "message.mdm.import.no_chunks", backup.sourceDim(), sourceRegion));
+            }
+        } catch (IOException e) {
+            throw new DimensionImportSource.ImportException(Component.translatable(
+                    "message.mdm.import.unreadable", sourceRegion, e.getMessage()), e);
+        }
+
+        // 必须真的卸载并抹干净，不是保险：importDimension 的注释写明 region 文件要在 level 创建前
+        // 就位，因为 RegionFileStorage 会缓存已打开的句柄——level 还开着就覆盖，改动不会被看到
+        unloadAndWipe(server, key);
+
+        // importDimension 不检查"维度是否已存在"，正好直接复用：重新解析类型/生成器、
+        // 重拷 region/entities/poi、createAndPersist 重建 level 并重写 stem。
+        // 它也会把同一份配方再写一遍，幂等
+        ImportResult result = importDimension(server, key, source, backup.sourceDim(), backup.template());
+        MdmMain.LOGGER.info("Reset dimension {} from backup '{}'", key.location(), backup.source());
+        return result;
     }
 
     /**
@@ -392,14 +492,14 @@ public final class DynamicDimensionManager {
                     key.location());
             return;
         }
-        DimensionSavedData.get(server).put(DimensionSavedData.entry(key.location().toString(), encoded));
+        DimensionSavedData.get(server).putDim(DimensionSavedData.entry(key.location().toString(), encoded));
     }
 
     /** 服务器启动时重建所有被记录的运行时维度。 */
     public static int restore(MinecraftServer server) {
         DimensionSavedData data = DimensionSavedData.get(server);
         int restored = 0;
-        for (CompoundTag entry : data.entries()) {
+        for (CompoundTag entry : data.dims()) {
             ResourceLocation id = ResourceLocation.tryParse(DimensionSavedData.idOf(entry));
             if (id == null) {
                 MdmMain.LOGGER.warn("Skipping persisted dimension with unparsable id");
@@ -432,7 +532,7 @@ public final class DynamicDimensionManager {
         MdmMain.LEVELS = DimensionSavedData.get(server).managedLevelKeys();
     }
 
-    // ---------------------------------------------------------------- 传送出生点
+    // ---------------------------------------------------------------- 传送出生点 / 别名
 
     /**
      * 某个维度配置的传送出生点。
@@ -440,7 +540,7 @@ public final class DynamicDimensionManager {
      * 只影响 {@link #teleport} 在不给坐标时的落点，<b>不是</b>世界真正的出生点——
      * 刻意不去动 {@code setDefaultSpawnPos}。
      *
-     * @return 没配置过、或该维度不由本模组管理时返回 null
+     * @return 没配置过时返回 null
      */
     @Nullable
     public static BlockPos spawnOf(MinecraftServer server, ResourceKey<Level> key) {
@@ -449,23 +549,27 @@ public final class DynamicDimensionManager {
 
     /**
      * 设置或清除某个维度的传送出生点。
+     * <p>
+     * 任何<b>已加载</b>的维度都能设，不管是不是本模组创建的——静态维度（数据包 JSON 定义的、
+     * 以及 vanilla 那三个）同样适用。
      *
      * @param pos 传 null 表示清除
-     * @return false 表示该维度不由本模组管理，无法配置
+     * @return false 表示该维度没加载，无处可设
      */
     public static boolean setSpawn(MinecraftServer server, ResourceKey<Level> key, @Nullable BlockPos pos) {
-        return DimensionSavedData.get(server).setSpawn(key.location().toString(), pos);
+        if (server.getLevel(key) == null) {
+            return false;
+        }
+        DimensionSavedData.get(server).setSpawn(key.location().toString(), pos);
+        return true;
     }
-
-    // ---------------------------------------------------------------- 别名
 
     /**
      * 某个维度的别名——界面上拿来展示的名字。
      * <p>
-     * 和传送出生点同一套语义：只有本模组记录的动态维度才可能有别名，静态维度（数据包 JSON 定义的、
-     * 以及 vanilla 那三个）在存档数据里没有条目，永远返回 null。
+     * 与传送出生点同一套语义：任何已加载的维度都可能有。
      *
-     * @return 没设置过、或该维度不由本模组管理时返回 null
+     * @return 没设置过时返回 null
      */
     @Nullable
     public static String aliasOf(MinecraftServer server, ResourceKey<Level> key) {
@@ -474,12 +578,18 @@ public final class DynamicDimensionManager {
 
     /**
      * 设置或清除某个维度的别名。
+     * <p>
+     * 和 {@link #setSpawn} 一样，任何<b>已加载</b>的维度都能设，不限于本模组创建的。
      *
      * @param alias 传 null 表示清除
-     * @return false 表示该维度不由本模组管理，无法配置
+     * @return false 表示该维度没加载，无处可设
      */
     public static boolean setAlias(MinecraftServer server, ResourceKey<Level> key, @Nullable String alias) {
-        return DimensionSavedData.get(server).setAlias(key.location().toString(), alias);
+        if (server.getLevel(key) == null) {
+            return false;
+        }
+        DimensionSavedData.get(server).setAlias(key.location().toString(), alias);
+        return true;
     }
 
     @Nullable

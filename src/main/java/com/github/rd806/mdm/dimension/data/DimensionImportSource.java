@@ -9,6 +9,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -34,9 +35,6 @@ import java.util.stream.Stream;
  */
 public final class DimensionImportSource {
 
-    /** 约定目录名（位于游戏根目录下）。 */
-    public static final String DIRECTORY = Config.IMPORT_FOLDER.get();
-
     private static final String LEVEL_DAT = "level.dat";
     private static final String TAG_DATA = "Data";
     private static final String TAG_WORLD_GEN = "WorldGenSettings";
@@ -57,9 +55,9 @@ public final class DimensionImportSource {
 
     // ---------------------------------------------------------------- 定位
 
-    /** 约定目录本身，缺失时创建。 */
+    /** 约定目录本身，缺失时创建。目录名来自配置，所以只能在这里按需读——不能提前到构造函数。 */
     public static Path directory() {
-        return FMLPaths.getOrCreateGameRelativePath(Path.of(DIRECTORY));
+        return FMLPaths.getOrCreateGameRelativePath(Path.of(Config.importFolder()));
     }
 
     /** 约定目录下所有看起来像存档的子目录名。 */
@@ -87,26 +85,27 @@ public final class DimensionImportSource {
         // 命令用的 StringArgumentType.word() 允许 "." 和 "-"，所以 ".." 是可匹配的。
         // 要求解析结果仍是约定目录的直接子目录，挡住路径穿越。
         if (!dir.equals(root.getParent())) {
-            throw new ImportException("Illegal name: '" + name + "'. Must be put in " + DIRECTORY + "/。");
+            throw new ImportException(Component.translatable("message.mdm.import.illegal_name", name, Config.importFolder()));
         }
         if (!Files.isDirectory(root)) {
-            throw new ImportException("Can not find '" + name + "' at " + DIRECTORY + "/" );
+            throw new ImportException(Component.translatable("message.mdm.import.not_found", name, Config.importFolder()));
         }
         Path levelDat = root.resolve(LEVEL_DAT);
         if (!Files.isRegularFile(levelDat)) {
-            throw new ImportException(root + " no " + LEVEL_DAT);
+            throw new ImportException(Component.translatable("message.mdm.import.no_level_dat", root, LEVEL_DAT));
         }
 
         CompoundTag tag;
         try {
             tag = NbtIo.readCompressed(levelDat.toFile());
         } catch (IOException e) {
-            throw new ImportException("Fail to read: " + levelDat + e.getMessage() + "）", e);
+            throw new ImportException(Component.translatable(
+                    "message.mdm.import.unreadable", levelDat, e.getMessage()), e);
         }
 
         CompoundTag data = tag.getCompound(TAG_DATA);
         if (data.isEmpty()) {
-            throw new ImportException("失败：" + levelDat + " 里没有 Data 复合标签，存档格式无法识别。");
+            throw new ImportException(Component.translatable("message.mdm.import.no_data_tag", levelDat));
         }
         return new DimensionImportSource(name, root, data);
     }
@@ -216,14 +215,30 @@ public final class DimensionImportSource {
         return ChunkGenerator.CODEC.parse(ops, generatorTag).result().orElse(null);
     }
 
-    /** 导入过程中可预期的失败，message 直接面向命令执行者。 */
+    /**
+     * 导入过程中可预期的失败。
+     * <p>
+     * 携带的是 {@link Component} 而不是拼好的字符串：命令执行者看到的必须是<b>按他自己语言</b>
+     * 渲染的文字。{@code getMessage()} 退化成给日志看的兜底文本——Forge 会在服务端也加载模组的
+     * en_us（{@code LanguageHook}），所以日志里同样是完整的一句话，不是裸键名。
+     * <p>
+     * 展示时用 {@link #component()}，不要再 {@code Component.literal(e.getMessage())}。
+     */
     public static class ImportException extends RuntimeException {
-        public ImportException(String message) {
-            super(message);
+        private final Component component;
+
+        public ImportException(Component component) {
+            this(component, null);
         }
 
-        public ImportException(String message, Throwable cause) {
-            super(message, cause);
+        public ImportException(Component component, @Nullable Throwable cause) {
+            super(component.getString(), cause);
+            this.component = component;
+        }
+
+        /** 面向玩家的那一份，客户端会按自己的语言渲染。 */
+        public Component component() {
+            return component;
         }
     }
 }

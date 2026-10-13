@@ -2,6 +2,7 @@ package com.github.rd806.mdm.command;
 
 import com.github.rd806.mdm.MdmMain;
 import com.github.rd806.mdm.dimension.data.DimensionImportSource;
+import com.github.rd806.mdm.dimension.data.DimensionSavedData;
 import com.github.rd806.mdm.dimension.data.DimensionTemplates;
 import com.github.rd806.mdm.dimension.manager.DynamicDimensionManager;
 import com.github.rd806.mdm.dimension.MdmDimensions;
@@ -27,12 +28,13 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * {@code /mdm dimension ...} 命令组。
+ * {@code /mdm dimension ...} 命令组，管理维度的增删和重置。
  * <pre>
  *   /mdm dimension list
  *   /mdm dimension create &lt;id&gt; &lt;模板&gt;
  *   /mdm dimension delete &lt;id&gt;
  *   /mdm dimension import &lt;id&gt; &lt;源名&gt; [源维度] [模板]
+ *   /mdm dimension reset &lt;id&gt; [confirm]   按备份原地重导地形
  * </pre>
  */
 public final class DimensionCommand {
@@ -42,12 +44,14 @@ public final class DimensionCommand {
     private static final String LIST = "list";
     private static final String CREATE = "create";
     private static final String IMPORT = "import";
+    private static final String RESET = "reset";
     private static final String DELETE = "delete";
 
     private static final String ARG_ID = "id";
     private static final String ARG_TEMPLATE = "template";
     private static final String ARG_SOURCE = "source";
     private static final String ARG_SOURCE_DIMENSION = "sourceDimension";
+    private static final String CONFIRM = "confirm";
 
     private static final SuggestionProvider<CommandSourceStack> SUGGEST_TEMPLATES =
             (context, builder) -> SharedSuggestionProvider.suggest(DimensionTemplates.names(), builder);
@@ -78,6 +82,7 @@ public final class DimensionCommand {
                         .then(listNode())
                         .then(createNode())
                         .then(importNode())
+                        .then(resetNode())
                         .then(deleteNode())
                 );
     }
@@ -105,6 +110,21 @@ public final class DimensionCommand {
                                         .then(Commands.argument(ARG_TEMPLATE, StringArgumentType.word())
                                                 .suggests(SUGGEST_TEMPLATES)
                                                 .executes(context -> importDimension(context, true, true))))));
+    }
+
+    /**
+     * {@code /mdm dimension reset <id> [confirm]}——照导入时记下的配方，把这个维度的地形重导一遍。
+     * <p>
+     * 不带 {@code confirm} 只预览。这条命令会把该维度的 region 文件整个覆盖掉且不可恢复，
+     * 敲错一个 id 的代价太大，值得多敲一个词。
+     */
+    private static LiteralArgumentBuilder<CommandSourceStack> resetNode() {
+        return Commands.literal(RESET)
+                .then(Commands.argument(ARG_ID, ResourceLocationArgument.id())
+                        .suggests(SUGGEST_MANAGED)
+                        .executes(DimensionCommand::resetPreview)
+                        .then(Commands.literal(CONFIRM)
+                                .executes(DimensionCommand::resetConfirmed)));
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> deleteNode() {
@@ -211,10 +231,55 @@ public final class DimensionCommand {
                     result.chunkFiles(), result.source(), sourceDim, result.dimensionId()), true);
             return 1;
         } catch (DimensionImportSource.ImportException e) {
-            // 把具体原因原样报出来，不要吞成笼统的「导入失败」
-            source.sendFailure(Component.literal(e.getMessage()));
+            // 把具体原因原样报出来，不要吞成笼统的「导入失败」。异常里带的就是 translatable，
+            // 直接投递即可，客户端按玩家自己的语言渲染
+            source.sendFailure(e.component());
             return 0;
         }
+    }
+
+    // reset 命令
+
+    /** 只做预览，不动数据。 */
+    private static int resetPreview(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        MinecraftServer server = source.getServer();
+        ResourceLocation id = ResourceLocationArgument.getId(context, ARG_ID);
+
+        DimensionSavedData.Backup backup =
+                DynamicDimensionManager.backupOf(server, MdmDimensions.levelKey(id));
+        if (backup == null) {
+            source.sendFailure(Component.translatable("message.mdm.import.no_backup", id));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.translatable("message.mdm.command.dimension.reset.preview",
+                id, backup.source(), backup.sourceDim(), backupTemplateName(backup)), false);
+        return 1;
+    }
+
+    private static int resetConfirmed(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        MinecraftServer server = source.getServer();
+        ResourceLocation id = ResourceLocationArgument.getId(context, ARG_ID);
+
+        try {
+            DynamicDimensionManager.ImportResult result =
+                    DynamicDimensionManager.resetFromBackup(server, MdmDimensions.levelKey(id));
+            source.sendSuccess(() -> Component.translatable("message.mdm.command.dimension.reset.success",
+                    id, result.source(), result.chunkFiles()), true);
+            return 1;
+        } catch (DimensionImportSource.ImportException e) {
+            // 和 import 一样把原因原样报出来（异常里带的就是 translatable），别吞成笼统的一句
+            source.sendFailure(e.component());
+            return 0;
+        }
+    }
+
+    /** 备份里没记模板时显示成一句说明，而不是留白。 */
+    private static Component backupTemplateName(DimensionSavedData.Backup backup) {
+        return backup.template() == null
+                ? Component.translatable("message.mdm.command.modify.backup.no_template")
+                : Component.literal(backup.template());
     }
 
     // delete 命令

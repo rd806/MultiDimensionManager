@@ -10,6 +10,9 @@ public class Config {
 
     private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
 
+    /** 导入目录的默认值。 */
+    public static final String DEFAULT_IMPORT_DIRECTORY = "mdm_imports";
+
     /// 存放导入维度的目录
     public static ForgeConfigSpec.ConfigValue<String> IMPORT_FOLDER;
 
@@ -20,7 +23,7 @@ public class Config {
     public static ForgeConfigSpec init() {
         IMPORT_FOLDER = BUILDER
                 .comment("The import folder.")
-                .define("importFolder", "mdm_imports");
+                .define("importFolder", DEFAULT_IMPORT_DIRECTORY);
         SHOW_OTHER_DIMENSIONS = BUILDER
                 .comment("Whether to show other dimensions.")
                 .define("showOtherDimensions", true);
@@ -42,6 +45,25 @@ public class Config {
             return SHOW_OTHER_DIMENSIONS.get();
         } catch (IllegalStateException e) {
             return true;
+        }
+    }
+
+    /**
+     * {@link #IMPORT_FOLDER} 的读取入口，理由同 {@link #showOtherDimensions()}。
+     * <p>
+     * <b>不要在模组构造函数里直接读 {@code IMPORT_FOLDER.get()}</b>：那一刻配置还没加载完
+     * （{@code registerConfig} 只是登记，真正的加载在之后的 CONFIG_LOAD 阶段），开发环境下
+     * {@code get()} 会抛 {@code IllegalStateException}，生产环境则静默返回默认值——用户改过的
+     * 目录会被无视。要用就走这里，读不到就退回默认值。
+     */
+    public static String importFolder() {
+        if (IMPORT_FOLDER == null) {
+            return DEFAULT_IMPORT_DIRECTORY;
+        }
+        try {
+            return IMPORT_FOLDER.get();
+        } catch (IllegalStateException e) {
+            return DEFAULT_IMPORT_DIRECTORY;
         }
     }
 }

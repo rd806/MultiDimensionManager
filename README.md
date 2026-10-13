@@ -1,6 +1,12 @@
-# MultiDimensionManager
+# Multi Dimension Manager
 
 Manage Minecraft world's dimensions, trying to remake the famous plugin [Multiverse-Core](https://modrinth.com/plugin/multiverse-core) in (Neo)Forge environment.
+
+## GUI
+
+The mod adds a USER-FRIENDLY GUI to make dimension transportation easier.
+
+> Currently, the only way to open GUI is using the command below.
 
 ## Commands
 
@@ -10,6 +16,7 @@ Manage Minecraft world's dimensions, trying to remake the famous plugin [Multive
 |-----------------------------------------|-------------------------------------|
 | `/mdm dimension import <id> <source>`   | Import a world as a dimension       |
 | `/mdm dimension create <id> <template>` | Create a dimension using a template |
+| `/mdm dimension reset <id> [confirm]`   | Reset a dimension                   |
 | `/mdm dimension delete <id>`            | Delete a dimension                  |
 | `/mdm dimension list`                   | Show all dimensions in the save     |
 
@@ -17,10 +24,11 @@ Manage Minecraft world's dimensions, trying to remake the famous plugin [Multive
 
 ### Modify a dimension
 
-| Commands                        | Usage                         |
-|---------------------------------|-------------------------------|
-| `/mdm modify spawn <x> <y> <z>` | Set a dimension's spawn point |
-| `/mdm modify alias`             | Set a dimension's alias       |
+| Commands                         | Usage                         |
+|----------------------------------|-------------------------------|
+| `/mdm modify spawn <x> <y> <z>`  | Set a dimension's spawn point |
+| `/mdm modify alias <name>`       | Set a dimension's alias       |
+| `/mdm modify backup <id> <path>` | Set a dimension's backup path |
 
 ### Teleport to a dimension
 
@@ -38,4 +46,4 @@ You can also use
 /mdm gui
 ```
 
-to open a gui screen and teleport through a single mouse-click.
+to open the gui screen and teleport through a single mouse-click.

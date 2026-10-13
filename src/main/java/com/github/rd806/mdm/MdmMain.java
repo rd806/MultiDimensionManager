@@ -17,6 +17,7 @@ import java.util.Set;
 public class MdmMain {
 
     public static final String MODID = "mdm";
+    public static final Logger LOGGER = LogUtils.getLogger();
 
     /**
      * 本模组管理的维度（动态创建与导入的那些）的实时快照。权威来源是存档里的{@code DimensionSavedData}
@@ -27,8 +28,6 @@ public class MdmMain {
      * 启动恢复这三条路径最后都会调用它。不要在别处直接赋值，否则会和存档记录不同步。
      */
     public static volatile Set<ResourceKey<Level>> LEVELS = Set.of();
-
-    public static final Logger LOGGER = LogUtils.getLogger();
 
     public MdmMain(FMLJavaModLoadingContext context) {
         // Register our mod's ForgeConfigSpec so that Forge can create and load the config file for us

@@ -23,7 +23,7 @@ public class ServerSetup {
     @SubscribeEvent
     public static void onServerStarting(ServerStartingEvent event) {
         // Do something when the server starts
-        MdmMain.LOGGER.info("HELLO from server starting");
+        MdmMain.LOGGER.info("Enable Multi Dimension Manager!");
     }
 
     /**
