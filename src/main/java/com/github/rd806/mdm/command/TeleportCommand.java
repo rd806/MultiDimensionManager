@@ -68,9 +68,10 @@ public final class TeleportCommand {
      * 同一棵 {@code /mdm} 树上。
      */
     public static LiteralArgumentBuilder<CommandSourceStack> get() {
+        // 权限挂子命令字面量、不挂根节点，理由见 ServerSetup#onRegisterCommands
         return Commands.literal(ROOT)
-                .requires(source -> source.hasPermission(2))
                 .then(Commands.literal(TELEPORT)
+                        .requires(source -> source.hasPermission(2))
                         .then(Commands.argument(ARG_TARGETS, EntityArgument.players())
                                 .then(Commands.argument(ARG_DIMENSION, DimensionArgument.dimension())
                                         .suggests(SUGGEST_VISIBLE_DIMENSIONS)

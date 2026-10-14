@@ -42,9 +42,9 @@ public record DimensionTeleportPacket(ResourceLocation id) {
     /**
      * 服务端侧的实际处理，跑在服务器主线程上。
      * <p>
-     * 权限在这里重新校验一遍：包是客户端发来的，能改客户端的玩家可以自己构造它，所以
-     * {@code /mdm gui} 上的 {@code requires} 不能当作唯一防线。等级取
-     * {@link MdmGuiNetwork#PERMISSION_LEVEL}，与命令树保持一致。
+     * 这里校验的是<b>维度白名单</b>而不是权限等级：GUI 的传送和 {@code /mdm tp} 是两条路，
+     * 后者仍归权限 2 管，前者只管"你此刻站在哪个维度"。但校验不能省——包是客户端发来的，
+     * 改过的客户端可以自己构造它，{@code /mdm gui} 上的判定挡不住这一类。
      * <p>
      * 落点传 {@code null}，即"用该维度配置的传送出生点，没配就退到地表"——和
      * {@code /mdm tp <玩家> <维度>} 不带坐标完全同一条路径。
@@ -54,9 +54,9 @@ public record DimensionTeleportPacket(ResourceLocation id) {
         if (player == null) {
             return;
         }
-        if (!player.hasPermissions(MdmGuiNetwork.PERMISSION_LEVEL)) {
-            player.displayClientMessage(
-                    Component.translatable("message.mdm.command.gui.no_permission"), false);
+        if (!MdmGuiNetwork.canOpenGui(player)) {
+            player.displayClientMessage(Component.translatable(
+                    "message.mdm.command.gui.not_allowed", player.level().dimension().location()), false);
             return;
         }
 

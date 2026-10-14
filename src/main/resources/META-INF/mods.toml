@@ -17,13 +17,13 @@ issueTrackerURL="https://github.com/rd806/MultiDimensionManager/issues" #optiona
 [[mods]] #mandatory
     modId = "mdm" #mandatory
     version = "1.0.0" #mandatory
-    displayName = "MultiDimension Manager" #mandatory
+    displayName = "Multi Dimension Manager" #mandatory
     # A URL to query for updates for this mod. See the JSON update specification https://docs.minecraftforge.net/en/latest/misc/updatechecker/
     #updateJSONURL="https://change.me.example.invalid/updates.json" #optional
     # A URL for the "homepage" for this mod, displayed in the mod UI
     displayURL="https://github.com/rd806/MultiDimensionManager" #optional
     # A file name (in the root of the mod JAR) containing a logo for display
-    #logoFile="mdm.png" #optional
+    logoFile="mdm_icon.png" #optional
     # A text field displayed in the mod UI
     #credits="Thanks for this example mod goes to Java" #optional
     # A text field displayed in the mod UI
@@ -61,3 +61,6 @@ issueTrackerURL="https://github.com/rd806/MultiDimensionManager/issues" #optiona
     versionRange = "${minecraft_version_range}"
     ordering = "NONE"
     side = "BOTH"
+
+[modproperties."mdm"]
+    catalogueImageIcon = "mdm_icon.png"

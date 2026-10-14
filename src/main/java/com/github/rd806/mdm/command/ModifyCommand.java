@@ -65,9 +65,10 @@ public final class ModifyCommand {
 
 
     public static LiteralArgumentBuilder<CommandSourceStack> get() {
+        // 权限挂子命令字面量、不挂根节点，理由见 ServerSetup#onRegisterCommands
         return Commands.literal(ROOT)
-                .requires(source -> source.hasPermission(2))
                 .then(Commands.literal(MODIFY)
+                        .requires(source -> source.hasPermission(2))
                         .then(spawnNode())
                         .then(aliasNode())
                         .then(backupNode())

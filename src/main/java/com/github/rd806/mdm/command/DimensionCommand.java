@@ -73,12 +73,15 @@ public final class DimensionCommand {
      * 也保证了整棵树只有这一处定义。注册方调用
      * {@code dispatcher.register(DimensionCommand.get())} 即可。
      * <p>
-     * 权限要求挂在根节点上（Brigadier 会把 requires 向下传递到所有子节点）。
+     * <b>权限要求挂在子命令字面量上，不能挂根节点</b>：四个命令类注册的是同一棵 {@code /mdm} 树，
+     * Brigadier 合并同名节点时只保留第一个注册的 requirement（详见
+     * {@code ServerSetup#onRegisterCommands}），挂在根上的谓词会盖住所有子命令，包括本该按
+     * 维度白名单放行的 {@code gui}。
      */
     public static LiteralArgumentBuilder<CommandSourceStack> get() {
         return Commands.literal(ROOT)
-                .requires(source -> source.hasPermission(2))
                 .then(Commands.literal(DIMENSION)
+                        .requires(source -> source.hasPermission(2))
                         .then(listNode())
                         .then(createNode())
                         .then(importNode())

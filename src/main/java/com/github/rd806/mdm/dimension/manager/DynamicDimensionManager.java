@@ -333,8 +333,7 @@ public final class DynamicDimensionManager {
      * @param backup 传 null 表示清除，此后该维度被当作"模板创建"，不能再重置
      * @return false 表示该维度没加载，无处可设
      */
-    public static boolean setBackup(MinecraftServer server, ResourceKey<Level> key,
-                                    @Nullable DimensionSavedData.Backup backup) {
+    public static boolean setBackup(MinecraftServer server, ResourceKey<Level> key, @Nullable DimensionSavedData.Backup backup) {
         if (server.getLevel(key) == null) {
             return false;
         }

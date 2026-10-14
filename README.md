@@ -2,6 +2,8 @@
 
 Manage Minecraft world's dimensions, trying to remake the famous plugin [Multiverse-Core](https://modrinth.com/plugin/multiverse-core) in (Neo)Forge environment.
 
+![Mdm Icon](src/main/resources/mdm_icon.png)
+
 ## GUI
 
 The mod adds a USER-FRIENDLY GUI to make dimension transportation easier.
@@ -47,3 +49,16 @@ You can also use
 ```
 
 to open the gui screen and teleport through a single mouse-click.
+
+## Configuration
+
+Available at `config/mdm-common.toml`:
+
+```toml
+#The import folder.
+importFolder = "mdm_imports"
+#Whether to show other dimensions.
+showOtherDimensions = true
+#Dimensions in which the dimension selector may be opened. Empty means nobody can.
+dimensionsWhitelists = ["minecraft:overworld"]
+```
